@@ -28,7 +28,7 @@ The issue isn't forgetting — it's that **joining a meeting requires you to con
 
 ## The solution
 
-Meeting Forcer takes a different approach: when your meeting starts, **every screen goes black**. There is no dismiss button. There is no close. The only way out is to click **"Join Meeting"**.
+Meeting Forcer takes a different approach: when your meeting starts, **every screen goes black**. There is no dismiss. There is no snooze. The only way out is **JOIN NOW**.
 
 No more "I'll join in 30 seconds" that turns into 10 minutes.
 
@@ -43,10 +43,11 @@ No more "I'll join in 30 seconds" that turns into 10 minutes.
 ## Features
 
 - **Full-screen blackout** — covers all monitors, sits above everything (screen-saver level)
-- **One exit: Join** — clicking "Join Meeting" opens the URL and clears the screen
-- **Snooze 5 min** — for when you genuinely need 5 more seconds
+- **One exit only** — `JOIN NOW →` opens the meeting URL and clears every screen
+- **No snooze** — there is no escape. that's the point.
 - **Google Calendar** — auto-detects Google Meet, Zoom, Teams, and Webex links from your events
 - **Manual meetings** — add any meeting URL + time without calendar integration
+- **Single-instance guard** — a second launch exits immediately instead of doubling up
 - **Menu bar app** — lives quietly in your menu bar, zero dock presence
 - **Auto-start on login** — one command to install as a LaunchAgent
 
@@ -91,7 +92,7 @@ The overlay fires 1 minute before the scheduled time.
 
 ### Option B — Google Calendar (automatic)
 
-Meeting Forcer can read your Google Calendar and automatically trigger for any event that has a video conferencing link.
+Meeting Forcer reads your Google Calendar and automatically triggers for any event with a video conferencing link.
 
 **One-time setup:**
 
@@ -134,7 +135,9 @@ meeting-forcer/
 
 ## How it works
 
-The overlay is a borderless `NSWindow` set to `NSScreenSaverWindowLevel` (above all apps, the dock, and the menu bar). One window is created per monitor. The only interactive elements are the **Join** and **Snooze** buttons — everything else ignores mouse events.
+The overlay is a borderless `NSWindow` at `NSScreenSaverWindowLevel` — above all apps, the dock, and the menu bar. One window is created per monitor. The `JOIN NOW →` button is the only interactive element; everything else ignores mouse events.
+
+A PID file at `~/.meeting-forcer/app.pid` prevents multiple instances from running simultaneously.
 
 Google Calendar events are polled every 60 seconds. Meeting URLs are extracted from `conferenceData.entryPoints` (Google Meet) or regex-matched from the event description/location (Zoom, Teams, Webex).
 

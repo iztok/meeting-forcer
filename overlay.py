@@ -36,7 +36,7 @@ class OverlayManager:
         self._windows = []
         self._targets = []  # Strong refs prevent GC of ObjC objects
 
-    def show(self, title, url, on_snooze=None):
+    def show(self, title, url):
         self.dismiss()
         self._targets = []
 
@@ -58,12 +58,12 @@ class OverlayManager:
             win.setIgnoresMouseEvents_(False)
 
             if screen == main:
-                win.setContentView_(self._make_content(frame, title, url, on_snooze))
+                win.setContentView_(self._make_content(frame, title, url))
 
             win.makeKeyAndOrderFront_(None)
             self._windows.append(win)
 
-    def _make_content(self, frame, title, url, on_snooze):
+    def _make_content(self, frame, title, url):
         W = frame.size.width
         H = frame.size.height
         cx, cy = W / 2, H / 2
@@ -105,23 +105,6 @@ class OverlayManager:
         join_btn.setTarget_(join_target)
         join_btn.setAction_("fire:")
         root.addSubview_(join_btn)
-
-        # Snooze button
-        snooze_btn = NSButton.alloc().initWithFrame_(NSMakeRect(cx - 70, cy - 148, 140, 36))
-        snooze_btn.setTitle_("Snooze 5 min")
-        snooze_btn.setBezelStyle_(1)
-        snooze_btn.setFont_(NSFont.systemFontOfSize_(13))
-
-        def on_snooze_click():
-            self.dismiss()
-            if on_snooze:
-                on_snooze()
-
-        snooze_target = _ActionTarget.alloc().init().bind(on_snooze_click)
-        self._targets.append(snooze_target)
-        snooze_btn.setTarget_(snooze_target)
-        snooze_btn.setAction_("fire:")
-        root.addSubview_(snooze_btn)
 
         return root
 

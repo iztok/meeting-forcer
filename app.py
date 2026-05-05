@@ -89,16 +89,7 @@ class MeetingForcerApp(rumps.App):
             # Mark shown immediately so a re-entrant tick can't double-trigger
             self._shown[mid] = None
 
-            def make_snooze(meeting_id):
-                def snooze():
-                    self._shown[meeting_id] = datetime.datetime.now() + datetime.timedelta(minutes=5)
-                return snooze
-
-            self.overlay.show(
-                title=m["title"],
-                url=m["url"],
-                on_snooze=make_snooze(mid),
-            )
+            self.overlay.show(title=m["title"], url=m["url"])
 
     def _collect_meetings(self):
         results = []

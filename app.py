@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import datetime
 import os
+import sys
 import rumps
 from overlay import OverlayManager
 from calendar_service import CalendarService
@@ -8,6 +9,24 @@ import meetings_store
 
 CONFIG_DIR = os.path.expanduser("~/.meeting-forcer")
 CREDENTIALS_PATH = os.path.join(CONFIG_DIR, "credentials.json")
+PIDFILE = os.path.join(CONFIG_DIR, "app.pid")
+
+
+def _ensure_single_instance():
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    if os.path.exists(PIDFILE):
+        try:
+            with open(PIDFILE) as f:
+                old_pid = int(f.read().strip())
+            os.kill(old_pid, 0)  # Raises if process is gone
+            print(f"Meeting Forcer already running (PID {old_pid}). Exiting.")
+            sys.exit(0)
+        except (ProcessLookupError, ValueError, OSError):
+            pass  # Stale pidfile — overwrite it
+    with open(PIDFILE, "w") as f:
+        f.write(str(os.getpid()))
+    import atexit
+    atexit.register(lambda: os.unlink(PIDFILE) if os.path.exists(PIDFILE) else None)
 
 # How many minutes before start to trigger the overlay
 TRIGGER_MINUTES_BEFORE = 1
@@ -60,36 +79,26 @@ class MeetingForcerApp(rumps.App):
 
         for m in meetings:
             mid = m["id"]
-            suppress_until = self._shown.get(mid)
 
-            if suppress_until is None and mid in self._shown:
-                # Permanently dismissed (joined)
-                continue
-            if suppress_until and now < suppress_until:
-                continue
+            if mid in self._shown:
+                suppress_until = self._shown[mid]
+                # None = permanently dismissed (joined); datetime = snooze expiry
+                if suppress_until is None or now < suppress_until:
+                    continue
 
-            self._shown[mid] = suppress_until  # Mark as in-flight
+            # Mark shown immediately so a re-entrant tick can't double-trigger
+            self._shown[mid] = None
 
             def make_snooze(meeting_id):
                 def snooze():
                     self._shown[meeting_id] = datetime.datetime.now() + datetime.timedelta(minutes=5)
                 return snooze
 
-            def make_join_dismiss(meeting_id):
-                # Permanently suppress after joining
-                def dismiss():
-                    self._shown[meeting_id] = None
-                return dismiss
-
-            mid_copy = mid
             self.overlay.show(
                 title=m["title"],
                 url=m["url"],
-                on_snooze=make_snooze(mid_copy),
+                on_snooze=make_snooze(mid),
             )
-            # Register permanent dismiss on join is handled inside overlay via webbrowser.open;
-            # we mark it permanent here so repeated ticks don't re-show.
-            self._shown[mid_copy] = None
 
     def _collect_meetings(self):
         results = []
@@ -211,4 +220,5 @@ class MeetingForcerApp(rumps.App):
 
 
 if __name__ == "__main__":
+    _ensure_single_instance()
     MeetingForcerApp().run()

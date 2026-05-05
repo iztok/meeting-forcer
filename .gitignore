@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# App runtime / secrets
+.env
+token.json
+credentials.json
+
+# macOS
+.DS_Store
+.AppleDouble
+*.app
+
+# Logs
+*.log

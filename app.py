@@ -90,6 +90,7 @@ class MeetingForcerApp(rumps.App):
             self._shown[mid] = None
 
             self.overlay.show(title=m["title"], url=m["url"])
+            break  # One overlay at a time; next tick handles remaining meetings
 
     def _collect_meetings(self):
         results = []

@@ -42,11 +42,15 @@ def _field(text, x, y, w, h, font, color, align=_LEFT):
 
 
 def _rule(x, y, w, h):
-    """Solid white horizontal rule."""
-    v = NSView.alloc().initWithFrame_(NSMakeRect(x, y, w, h))
-    v.setWantsLayer_(True)
-    v.layer().setBackgroundColor_(_WHITE().CGColor())
-    return v
+    """Solid white horizontal rule via NSBox (no Quartz CGColor needed)."""
+    box = NSBox.alloc().initWithFrame_(NSMakeRect(x, y, w, h))
+    box.setBoxType_(4)       # NSBoxCustom
+    box.setFillColor_(_WHITE())
+    box.setBorderColor_(_WHITE())
+    box.setBorderWidth_(0)
+    box.setCornerRadius_(0)
+    box.setTitlePosition_(0) # NSNoTitle
+    return box
 
 
 class _ActionTarget(NSObject):

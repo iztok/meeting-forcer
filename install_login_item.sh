@@ -20,8 +20,9 @@ cat > "$PLIST" << EOF
   </array>
   <key>RunAtLoad</key>
   <true/>
-  <key>KeepAlive</key>
-  <true/>
+  <!-- KeepAlive omitted on purpose: with KeepAlive=true, macOS instantly
+       respawns the app when killed, making it impossible to stop. The app
+       should only start at login, not be revived on crash/quit. -->
   <key>StandardOutPath</key>
   <string>$HOME/.meeting-forcer/meeting-forcer.log</string>
   <key>StandardErrorPath</key>

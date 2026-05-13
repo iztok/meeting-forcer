@@ -57,8 +57,11 @@ class MeetingForcerApp(rumps.App):
             rumps.MenuItem("Check Now", callback=self._check_now),
         ]
 
-        # Immediate first check
-        self._do_check()
+        # No immediate _do_check from __init__: AppKit classes used by the overlay
+        # aren't fully wired up until NSApplication.run() starts the Cocoa run loop,
+        # and calling overlay.show() too early can crash with "Attempt to use
+        # unknown class". The first real check fires from the @rumps.timer(60)
+        # tick below, ~60s after launch.
 
     # ------------------------------------------------------------------ timers
 

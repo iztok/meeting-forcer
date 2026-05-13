@@ -39,7 +39,9 @@ class MeetingForcerApp(rumps.App):
         self.overlay = OverlayManager()
         self.calendar = CalendarService()
 
-        # meeting_id -> datetime after which we can show it again (None = permanent dismiss)
+        # meeting URL -> datetime after which we can show it again (None = permanent dismiss).
+        # Keyed by URL (not event ID) so the same meeting room is never shown twice
+        # even if it appears under multiple calendar event IDs.
         self._shown: dict = {}
 
         self._status_item = rumps.MenuItem("Waiting for meetings…")
@@ -78,36 +80,41 @@ class MeetingForcerApp(rumps.App):
             self._status_item.title = "No upcoming meetings"
 
         for m in meetings:
-            mid = m["id"]
+            key = m["url"]
 
-            if mid in self._shown:
-                suppress_until = self._shown[mid]
-                # None = permanently dismissed (joined); datetime = snooze expiry
+            if key in self._shown:
+                suppress_until = self._shown[key]
+                # None = permanently dismissed (joined); datetime = future re-show time
                 if suppress_until is None or now < suppress_until:
                     continue
 
             # Mark shown immediately so a re-entrant tick can't double-trigger
-            self._shown[mid] = None
+            self._shown[key] = None
 
             self.overlay.show(title=m["title"], url=m["url"])
             break  # One overlay at a time; next tick handles remaining meetings
 
     def _collect_meetings(self):
+        """Collect active meetings, deduped by both event ID and URL.
+
+        URL-level dedup handles the case where the same meeting room appears
+        in multiple calendar events — e.g. recurring overrides, re-sent invites,
+        or the same meeting visible on a coworker's shared calendar.
+        """
+        candidates = []
+        if self.calendar.is_ready():
+            candidates.extend(self.calendar.get_meetings_in_window(minutes_before=TRIGGER_MINUTES_BEFORE))
+        candidates.extend(meetings_store.get_active_meetings(window_minutes=TRIGGER_MINUTES_BEFORE))
+
         results = []
         seen_ids = set()
-
-        # Google Calendar
-        if self.calendar.is_ready():
-            for m in self.calendar.get_meetings_in_window(minutes_before=TRIGGER_MINUTES_BEFORE):
-                if m["id"] not in seen_ids:
-                    results.append(m)
-                    seen_ids.add(m["id"])
-
-        # Manual meetings
-        for m in meetings_store.get_active_meetings(window_minutes=TRIGGER_MINUTES_BEFORE):
-            if m["id"] not in seen_ids:
-                results.append(m)
-                seen_ids.add(m["id"])
+        seen_urls = set()
+        for m in candidates:
+            if m["id"] in seen_ids or m["url"] in seen_urls:
+                continue
+            results.append(m)
+            seen_ids.add(m["id"])
+            seen_urls.add(m["url"])
 
         return results
 

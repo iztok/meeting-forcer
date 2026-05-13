@@ -75,6 +75,14 @@ class MeetingForcerApp(rumps.App):
         now = datetime.datetime.now()
         meetings = self._collect_meetings()
 
+        # Diagnostic logging — `./run.sh 2>&1 | tee meeting.log` to capture
+        print(
+            f"[{now.strftime('%H:%M:%S')}] tick: {len(meetings)} meeting(s); "
+            f"urls={[m['url'][:40] + '…' if len(m['url']) > 40 else m['url'] for m in meetings]}; "
+            f"shown_keys={len(self._shown)}",
+            flush=True,
+        )
+
         # Update status label
         if meetings:
             next_m = meetings[0]
@@ -94,6 +102,7 @@ class MeetingForcerApp(rumps.App):
             # Mark shown immediately so a re-entrant tick can't double-trigger
             self._shown[key] = None
 
+            print(f"[{now.strftime('%H:%M:%S')}] showing overlay for: {m['title']!r} ({key})", flush=True)
             self.overlay.show(title=m["title"], url=m["url"])
             break  # One overlay at a time; next tick handles remaining meetings
 

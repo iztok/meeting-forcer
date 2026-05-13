@@ -94,7 +94,7 @@ class OverlayManager:
             win.setBackgroundColor_(_BLACK())
             win.setLevel_(_OVERLAY_LEVEL)
             win.setOpaque_(True)
-            win.setCollectionBehavior_(1 << 3)  # CanJoinAllSpaces
+            win.setCollectionBehavior_(1 << 0)  # NSWindowCollectionBehaviorCanJoinAllSpaces
             win.setIgnoresMouseEvents_(False)
 
             if screen == main:
